@@ -7,12 +7,14 @@ A Python tool to collect and document AWS networking configurations in an easy-t
 - Collects comprehensive AWS networking information including:
   - VPCs, Subnets, Route Tables
   - Internet Gateways, NAT Gateways, Transit Gateways, VPN Gateways
+  - EC2 Instances (with NAT instance detection)
   - Security Groups and Network ACLs
   - VPC Peering Connections
   - VPC Endpoints
   - Direct Connect configurations
 - Outputs formatted markdown tables for easy documentation
 - Supports multiple AWS regions and profiles
+- Includes AI analysis prompts for security and architecture assessment
 
 ## Installation
 
@@ -60,6 +62,7 @@ The tool generates a markdown file containing:
 - Subnet details with availability zones and IP counts
 - Route table configurations with key routes
 - Gateway configurations (IGW, NAT, TGW, VGW)
+- EC2 instances with network details (identifies NAT instances)
 - Security group rules
 - Network ACL configurations
 - VPC peering connections
@@ -73,17 +76,50 @@ The tool requires read-only permissions for:
 - `directconnect:Describe*` (Direct Connect resources)
 - `sts:GetCallerIdentity` (to get account ID)
 
-## Next Steps
+## Analyzing Your Network Configuration
 
-After collecting your network configuration, you can:
-1. Review the output for documentation purposes
-2. Use AI tools to analyze the configuration and identify potential issues
-3. Share with team members for review and planning
-4. Track configuration changes over time by running periodically
+After collecting your network data, use the AI analysis prompts in `PROMPTS.md` to get:
+
+1. **Security Assessment**: Identify vulnerabilities, overly permissive rules, and exposed resources
+2. **Architecture Review**: Best practices for HA, redundancy, routing, and subnet design
+3. **Compliance Analysis**: CIS AWS Foundations Benchmark and Well-Architected Framework alignment
+4. **Cost Optimization**: Find unused resources and opportunities for savings
+
+### Quick Start Analysis
+
+```bash
+# 1. Collect your network configuration
+python aws_network_mapper.py --output my-network.md
+
+# 2. Open PROMPTS.md and copy "Prompt 1: High-Level Assessment"
+
+# 3. Paste the prompt into Claude or ChatGPT, followed by your network config content
+
+# 4. Review findings and use "Prompt 2: Detailed Remediation" for specific issues
+```
+
+See [PROMPTS.md](PROMPTS.md) for detailed instructions and example prompts.
+
+## Workflow
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Run Network    │────▶│  Review Output   │────▶│  AI Analysis    │
+│     Mapper      │     │   (Markdown)     │     │   (Prompts)     │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                                           │
+                                                           ▼
+                        ┌──────────────────┐     ┌─────────────────┐
+                        │   Track Over     │◀────│   Implement     │
+                        │      Time        │     │  Remediations   │
+                        └──────────────────┘     └─────────────────┘
+```
 
 ## Project Structure
 
 - `aws_network_mapper.py` - Main script for data collection
 - `markdown_formatter.py` - Formats AWS data into markdown tables
+- `PROMPTS.md` - AI analysis prompts for security and architecture assessment
 - `requirements.txt` - Python dependencies
 - `CLAUDE.md` - Documentation for AI assistants working with this codebase
+- `Notes.md` - Example output and project planning notes
