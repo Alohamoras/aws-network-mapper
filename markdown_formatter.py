@@ -251,6 +251,42 @@ class MarkdownFormatter:
 
         return self.format_table(headers, rows)
 
+    def format_ec2_instances(self, instances: List[Dict[str, Any]]) -> str:
+        """Format EC2 instance information."""
+        headers = ["Instance ID", "Name", "Type", "State", "VPC", "Subnet", "Private IP", "Public IP", "NAT Instance"]
+        rows = []
+
+        for instance in instances:
+            # Show only running, stopped, or stopping instances (skip terminated)
+            if instance['State'] in ['terminated', 'terminating']:
+                continue
+
+            nat_indicator = 'Yes' if instance['IsNatInstance'] else 'No'
+
+            rows.append([
+                instance['InstanceId'],
+                instance['Name'] or '(unnamed)',
+                instance['InstanceType'],
+                instance['State'],
+                instance['VpcId'],
+                instance['SubnetId'],
+                instance['PrivateIpAddress'],
+                instance['PublicIpAddress'],
+                nat_indicator
+            ])
+
+        if not rows:
+            return "_No EC2 instances found (excluding terminated instances)_\n"
+
+        result = self.format_table(headers, rows)
+
+        # Add note about NAT instances
+        nat_instances = [i for i in instances if i['IsNatInstance'] and i['State'] not in ['terminated', 'terminating']]
+        if nat_instances:
+            result += f"\nNote: {len(nat_instances)} NAT instance(s) detected (source/destination check disabled).\n"
+
+        return result
+
     def format_direct_connect(self, dx_data: Dict[str, Any]) -> str:
         """Format Direct Connect information."""
         output = []
@@ -343,6 +379,10 @@ class MarkdownFormatter:
         # VPN Gateways
         output.append("\n## VPN Gateways\n")
         output.append(self.format_vpn_gateways(data['vpn_gateways']))
+
+        # EC2 Instances
+        output.append("\n## EC2 Instances\n")
+        output.append(self.format_ec2_instances(data['ec2_instances']))
 
         # Security Groups
         output.append("\n## Security Groups\n")

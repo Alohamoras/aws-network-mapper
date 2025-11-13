@@ -304,6 +304,42 @@ class AWSNetworkMapper:
 
         return endpoints
 
+    def collect_ec2_instances(self) -> List[Dict[str, Any]]:
+        """Collect EC2 instance information."""
+        print("Collecting EC2 Instances...")
+        response = self.ec2_client.describe_instances()
+        instances = []
+
+        for reservation in response.get('Reservations', []):
+            for instance in reservation.get('Instances', []):
+                # Get network interfaces info
+                network_interfaces = instance.get('NetworkInterfaces', [])
+                primary_eni = network_interfaces[0] if network_interfaces else {}
+
+                # Determine if this is a NAT instance (source/dest check disabled)
+                source_dest_check = instance.get('SourceDestCheck', True)
+                is_nat_instance = not source_dest_check
+
+                # Get security groups
+                security_groups = [sg['GroupId'] for sg in instance.get('SecurityGroups', [])]
+
+                instances.append({
+                    'InstanceId': instance['InstanceId'],
+                    'Name': self.get_tag_value(instance.get('Tags', []), 'Name'),
+                    'InstanceType': instance['InstanceType'],
+                    'State': instance['State']['Name'],
+                    'VpcId': instance.get('VpcId', 'N/A'),
+                    'SubnetId': instance.get('SubnetId', 'N/A'),
+                    'PrivateIpAddress': instance.get('PrivateIpAddress', 'N/A'),
+                    'PublicIpAddress': instance.get('PublicIpAddress', 'N/A'),
+                    'PrimaryEniId': primary_eni.get('NetworkInterfaceId', 'N/A'),
+                    'SecurityGroups': security_groups,
+                    'IsNatInstance': is_nat_instance,
+                    'SourceDestCheck': source_dest_check
+                })
+
+        return instances
+
     def collect_direct_connect(self) -> Dict[str, Any]:
         """Collect Direct Connect information."""
         print("Collecting Direct Connect configurations...")
@@ -348,6 +384,7 @@ class AWSNetworkMapper:
             'network_acls': self.collect_network_acls(),
             'vpc_peering': self.collect_vpc_peering(),
             'vpc_endpoints': self.collect_vpc_endpoints(),
+            'ec2_instances': self.collect_ec2_instances(),
             'direct_connect': self.collect_direct_connect()
         }
 
@@ -391,6 +428,7 @@ def main():
         print(f"  - Internet Gateways: {len(data['internet_gateways'])}")
         print(f"  - NAT Gateways: {len(data['nat_gateways'])}")
         print(f"  - Transit Gateways: {len(data['transit_gateways'])}")
+        print(f"  - EC2 Instances: {len(data['ec2_instances'])}")
         print(f"  - Security Groups: {len(data['security_groups'])}")
 
         # Format to markdown
